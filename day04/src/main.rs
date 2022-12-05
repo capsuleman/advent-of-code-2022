@@ -14,8 +14,7 @@ fn main() -> std::io::Result<()> {
         let line_value = line?;
         let (start1, end1, start2, end2) = parse_line(&line_value);
 
-        if check_contains(start1, end1, start2, end2) || check_contains(start2, end2, start1, end1)
-        {
+        if check_conflicts(start1, end1, start2, end2) {
             reconsideration_count += 1;
         }
     }
@@ -40,6 +39,9 @@ fn parse_range(range: &str) -> (u32, u32) {
     (start, end)
 }
 
-fn check_contains(start1: u32, end1: u32, start2: u32, end2: u32) -> bool {
-    start1 >= start2 && end2 >= end1
+fn check_conflicts(start1: u32, end1: u32, start2: u32, end2: u32) -> bool {
+    let max_start = std::cmp::max(start1, start2);
+    let min_end = std::cmp::min(end1, end2);
+
+    max_start <= min_end
 }
