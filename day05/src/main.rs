@@ -51,9 +51,13 @@ fn main() -> std::io::Result<()> {
                 crate_origin_index, crate_destination_index, move_count
             );
 
+            let mut temporary_stack: Vec<char> = Vec::new();
             for _index in 0..move_count {
-                let crate_name = crate_stacks[crate_origin_index].pop().unwrap();
-                crate_stacks[crate_destination_index].push(crate_name);
+                temporary_stack.push(crate_stacks[crate_origin_index].pop().unwrap());
+            }
+
+            for _index in 0..move_count {
+                crate_stacks[crate_destination_index].push(temporary_stack.pop().unwrap());
             }
         }
     }
