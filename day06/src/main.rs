@@ -9,8 +9,8 @@ fn main() -> std::io::Result<()> {
     file.read_to_string(&mut data)
         .expect("Error while reading file");
 
-    for i in 4..(data.len() - 1) {
-        if check_duplicate(&data[i - 4..i]) {
+    for i in 14..(data.len() - 1) {
+        if check_duplicate(&data[i - 14..i]) {
             println!("{} {}", i, at(&data, i));
             return Ok(());
         }
