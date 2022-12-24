@@ -17,6 +17,19 @@ struct Position {
     column_number: usize,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd)]
+enum Journey {
+    GO,
+    COMEBACK,
+    GOBACK,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+struct PositionWithJourney {
+    position: Position,
+    journey: Journey,
+}
+
 #[derive(Debug)]
 struct Blizzard {
     position: Position,
@@ -41,25 +54,35 @@ fn main() -> std::io::Result<()> {
     println!("{line_number_max} / {column_number_max}");
 
     let mut count: usize = 0;
-    let mut positions = vec![Position {
-        line_number: 0,
-        column_number: 1,
+    let mut positions_with_journey = vec![PositionWithJourney {
+        position: Position {
+            line_number: 0,
+            column_number: 1,
+        },
+        journey: Journey::GO,
     }];
 
     loop {
         blizzards = get_next_blizzards(&blizzards, line_number_max, column_number_max);
 
-        positions = get_all_neighbors(&positions, line_number_max, column_number_max)
-            .into_iter()
-            .filter(|position| !is_position_taken(&blizzards, position))
-            .collect();
+        positions_with_journey =
+            get_all_neighbors(&positions_with_journey, line_number_max, column_number_max)
+                .into_iter()
+                .filter(|position_with_journey| {
+                    !is_position_taken(&blizzards, &position_with_journey.position)
+                })
+                .collect();
 
         count += 1;
-        println!("{count}\t{}", positions.len());
+        println!("{count}\t{}", positions_with_journey.len());
 
-        if positions.iter().any(|position| {
-            position.line_number == line_number_max
-                && position.column_number == column_number_max - 1
+        if positions_with_journey.iter().any(|position_with_journey| {
+            position_with_journey.journey == Journey::GOBACK
+                && is_end_position(
+                    &position_with_journey.position,
+                    line_number_max,
+                    column_number_max,
+                )
         }) {
             break;
         }
@@ -164,15 +187,20 @@ fn is_position_taken(blizzards: &Vec<Blizzard>, position: &Position) -> bool {
     })
 }
 
-fn get_neighbors(
+fn is_start_position(position: &Position) -> bool {
+    position.line_number == 0 && position.column_number == 1
+}
+
+fn is_end_position(position: &Position, line_number_max: usize, column_number_max: usize) -> bool {
+    position.line_number == line_number_max && position.column_number == column_number_max - 1
+}
+
+fn get_neighbors_position(
     position: Position,
     line_number_max: usize,
     column_number_max: usize,
 ) -> Vec<Position> {
-    let line_number = position.line_number;
-    let column_number = position.column_number;
-
-    if line_number == 0 && column_number == 1 {
+    if is_start_position(&position) {
         return vec![
             Position {
                 line_number: 0,
@@ -184,6 +212,9 @@ fn get_neighbors(
             },
         ];
     }
+
+    let line_number = position.line_number;
+    let column_number = position.column_number;
 
     vec![
         Position {
@@ -210,9 +241,8 @@ fn get_neighbors(
     .into_iter()
     .filter(|position| {
         // Start + End
-        if (position.line_number == 0 && position.column_number == 1)
-            || (position.line_number == line_number_max
-                && position.column_number == column_number_max - 1)
+        if is_start_position(position)
+            || is_end_position(position, line_number_max, column_number_max)
         {
             return true;
         }
@@ -225,14 +255,50 @@ fn get_neighbors(
     .collect()
 }
 
-fn get_all_neighbors(
-    positions: &Vec<Position>,
+fn get_neighbors(
+    position_with_journey: PositionWithJourney,
     line_number_max: usize,
     column_number_max: usize,
-) -> Vec<Position> {
-    positions
+) -> Vec<PositionWithJourney> {
+    let journey = position_with_journey.journey;
+
+    get_neighbors_position(
+        position_with_journey.position,
+        line_number_max,
+        column_number_max,
+    )
+    .into_iter()
+    .map(|position| {
+        if is_start_position(&position) && journey == Journey::COMEBACK {
+            return PositionWithJourney {
+                position,
+                journey: Journey::GOBACK,
+            };
+        }
+
+        if is_end_position(&position, line_number_max, column_number_max) && journey == Journey::GO
+        {
+            return PositionWithJourney {
+                position,
+                journey: Journey::COMEBACK,
+            };
+        }
+
+        PositionWithJourney { position, journey }
+    })
+    .collect()
+}
+
+fn get_all_neighbors(
+    positions_with_journey: &Vec<PositionWithJourney>,
+    line_number_max: usize,
+    column_number_max: usize,
+) -> Vec<PositionWithJourney> {
+    positions_with_journey
         .into_iter()
-        .flat_map(|&position| get_neighbors(position, line_number_max, column_number_max))
+        .flat_map(|&position_with_journey| {
+            get_neighbors(position_with_journey, line_number_max, column_number_max)
+        })
         .unique()
         .collect()
 }
