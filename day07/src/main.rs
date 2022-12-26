@@ -5,6 +5,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
+const TOTAL_SPACE: usize = 70000000;
+const REQUIRED_SPACE: usize = 30000000;
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let file_path = args.get(1).expect("No input file given.");
@@ -82,12 +85,18 @@ fn main() {
         }
     }
 
-    let mut accumulated_small_size = 0;
+    let used_size = *directory_size.get("/").expect("Root not found");
+    let free_space = TOTAL_SPACE - used_size;
+    let perfect_space_to_free = REQUIRED_SPACE - free_space;
 
-    for &size in directory_size.values() {
-        if size <= 100000 {
-            accumulated_small_size += size;
-        }
-    }
-    println!("Response: {accumulated_small_size}");
+    let optimized_space_to_free = directory_size
+        .values()
+        .into_iter()
+        .filter(|&&size| size > perfect_space_to_free)
+        .min()
+        .unwrap();
+
+    println!("{directory_size:#?}");
+
+    println!("Response: {optimized_space_to_free:#?}");
 }
