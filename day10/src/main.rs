@@ -22,13 +22,24 @@ fn main() -> std::io::Result<()> {
         }
     }
 
-    let mut response = 0;
-    for i in vec![20, 60, 100, 140, 180, 220] {
-        println!("{} {}", i, x_history[i - 1]);
-        response += x_history[i - 1] * (i as i32);
-    }
-
-    println!("{response}");
+    let screen = x_history
+        .into_iter()
+        .enumerate()
+        .map(|(index, x)| {
+            let singed_index = i32::try_from(index % 40).unwrap();
+            if singed_index - 1 <= x && x <= singed_index + 1 {
+                '#'
+            } else {
+                '.'
+            }
+        })
+        .collect::<String>();
+    println!("{}", &screen[0..40]);
+    println!("{}", &screen[40..80]);
+    println!("{}", &screen[80..120]);
+    println!("{}", &screen[120..160]);
+    println!("{}", &screen[160..200]);
+    println!("{}", &screen[200..240]);
 
     Ok(())
 }
