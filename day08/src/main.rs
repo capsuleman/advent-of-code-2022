@@ -25,60 +25,58 @@ fn main() {
     let forest_length = forest.len();
     let forest_width = forest[0].len();
 
-    let mut visible_tree_count = 0;
+    let mut scenic_scores = Vec::new();
 
     for length in 0..forest_length {
         for width in 0..forest_width {
-            if is_visible(&forest, length, width) {
-                visible_tree_count += 1;
-            }
+            scenic_scores.push(get_scenic_score(&forest, length, width));
         }
     }
 
-    println!("{visible_tree_count}");
+    println!("{}", scenic_scores.into_iter().max().unwrap());
 }
 
-fn is_visible(forest: &Vec<Vec<u32>>, length: usize, width: usize) -> bool {
-    is_visible_from_left(forest, length, width)
-        || is_visible_from_right(forest, length, width)
-        || is_visible_from_top(forest, length, width)
-        || is_visible_from_bottom(forest, length, width)
+fn get_scenic_score(forest: &Vec<Vec<u32>>, length: usize, width: usize) -> usize {
+    get_view_from_left(forest, length, width)
+        * get_view_from_right(forest, length, width)
+        * get_view_from_top(forest, length, width)
+        * get_view_from_bottom(forest, length, width)
 }
 
-fn is_visible_from_left(forest: &Vec<Vec<u32>>, length: usize, width: usize) -> bool {
-    for i in 0..width {
+fn get_view_from_left(forest: &Vec<Vec<u32>>, length: usize, width: usize) -> usize {
+    for i in (0..width).rev() {
         if forest[length][i] >= forest[length][width] {
-            return false;
+            return width - i;
         }
     }
-    true
+    width
 }
 
-fn is_visible_from_right(forest: &Vec<Vec<u32>>, length: usize, width: usize) -> bool {
+fn get_view_from_right(forest: &Vec<Vec<u32>>, length: usize, width: usize) -> usize {
     let forest_width = forest[0].len();
     for i in (width + 1)..forest_width {
         if forest[length][i] >= forest[length][width] {
-            return false;
+            return i - width;
         }
     }
-    true
+    forest_width - width - 1
 }
 
-fn is_visible_from_top(forest: &Vec<Vec<u32>>, length: usize, width: usize) -> bool {
-    for i in 0..length {
+fn get_view_from_top(forest: &Vec<Vec<u32>>, length: usize, width: usize) -> usize {
+    for i in (0..length).rev() {
         if forest[i][width] >= forest[length][width] {
-            return false;
+            return length - i;
         }
     }
-    true
+    length
 }
 
-fn is_visible_from_bottom(forest: &Vec<Vec<u32>>, length: usize, width: usize) -> bool {
+fn get_view_from_bottom(forest: &Vec<Vec<u32>>, length: usize, width: usize) -> usize {
     let forest_length = forest.len();
     for i in (length + 1)..forest_length {
         if forest[i][width] >= forest[length][width] {
-            return false;
+            return i - length;
         }
     }
-    true
+    forest_length - length - 1
 }
