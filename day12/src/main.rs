@@ -23,10 +23,6 @@ fn main() {
         line_number: 0,
         column_number: 0,
     };
-    let mut end_position: Position = Position {
-        line_number: 0,
-        column_number: 0,
-    };
 
     let altitudes: Vec<Vec<u32>> = line_iterator
         .enumerate()
@@ -36,14 +32,8 @@ fn main() {
                 .into_iter()
                 .enumerate()
                 .map(|(column_number, letter)| {
-                    if letter == 'S' {
-                        start_position = Position {
-                            line_number,
-                            column_number,
-                        };
-                    };
                     if letter == 'E' {
-                        end_position = Position {
+                        start_position = Position {
                             line_number,
                             column_number,
                         };
@@ -54,7 +44,7 @@ fn main() {
         })
         .collect();
 
-    let step_count = find_minimal_step(&altitudes, start_position, end_position);
+    let step_count = find_minimal_step(&altitudes, start_position);
     println!("Result: {step_count}");
 }
 
@@ -68,11 +58,7 @@ fn letter_to_altitude(letter: char) -> u32 {
     letter as u32 - 97
 }
 
-fn find_minimal_step(
-    altitudes: &Vec<Vec<u32>>,
-    start_position: Position,
-    end_position: Position,
-) -> u32 {
+fn find_minimal_step(altitudes: &Vec<Vec<u32>>, start_position: Position) -> u32 {
     let mut current_positions: HashSet<Position> = HashSet::from([start_position]);
     let mut previous_positions: HashSet<Position> = HashSet::new();
 
@@ -80,7 +66,10 @@ fn find_minimal_step(
     let max_column_number = altitudes[0].len();
     let mut step_count: u32 = 0;
 
-    while !current_positions.contains(&end_position) {
+    while !current_positions
+        .iter()
+        .any(|position| altitudes[position.line_number][position.column_number] == 0)
+    {
         let mut new_current_positions: HashSet<Position> = HashSet::new();
 
         for current_position in current_positions.into_iter() {
@@ -95,7 +84,7 @@ fn find_minimal_step(
                 }
 
                 if altitudes[neighbor.line_number][neighbor.column_number]
-                    <= current_position_altitude + 1
+                    >= current_position_altitude - 1
                 {
                     new_current_positions.insert(neighbor);
                 }
