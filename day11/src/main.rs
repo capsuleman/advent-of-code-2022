@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-const NUMBER_OF_ROUNDS: usize = 20;
+const NUMBER_OF_ROUNDS: usize = 10000;
 
 #[derive(Debug)]
 enum Operator {
@@ -66,6 +66,10 @@ fn main() {
         }
     }
 
+    let monkey_common_multiple = monkeys.iter().fold(1, |common_multiple, monkey| {
+        common_multiple * monkey.divisible_value_test
+    });
+
     for _ in 0..NUMBER_OF_ROUNDS {
         for monkey_index in 0..monkeys.len() {
             let mut items_to_append_true: VecDeque<i64> = VecDeque::new();
@@ -93,7 +97,7 @@ fn main() {
                         Operator::Add => left_member + right_member,
                         Operator::Multiply => left_member * right_member,
                     };
-                    item_value /= 3;
+                    item_value %= monkey_common_multiple;
 
                     if item_value % monkey.divisible_value_test == 0 {
                         items_to_append_true.push_back(item_value);
