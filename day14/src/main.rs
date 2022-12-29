@@ -50,6 +50,8 @@ fn main() {
         sands.insert(new_sand_position.unwrap());
     }
 
+    sands.insert(SAND_SOURCE);
+
     println!("{}", sands.len());
 }
 
@@ -96,12 +98,17 @@ fn get_new_sand_position(
 
     loop {
         let next_sand_position = move_sand_one_step(&sand_position, sands, walls);
-        if next_sand_position == sand_position {
-            return Some(sand_position);
+
+        if next_sand_position == SAND_SOURCE {
+            return None;
         }
 
-        if next_sand_position.y > deepest_wall {
-            return None;
+        if next_sand_position.y + 1 == deepest_wall + 2 {
+            return Some(next_sand_position);
+        }
+
+        if next_sand_position == sand_position {
+            return Some(sand_position);
         }
 
         sand_position = next_sand_position;
