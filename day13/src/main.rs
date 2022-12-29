@@ -14,28 +14,32 @@ fn main() {
     let buf_reader = BufReader::new(file);
 
     let mut line_iterator = buf_reader.lines().into_iter();
-    let mut index: usize = 1;
-    let mut result = 0;
 
-    while let (Some(Ok(left_line)), Some(Ok(right_line)), Some(Ok(_line))) = (
-        line_iterator.next(),
-        line_iterator.next(),
-        line_iterator.next(),
-    ) {
-        let left_packet = Packet::from(left_line);
-        let right_packet = Packet::from(right_line);
-        let is_pair_ordered = left_packet < right_packet;
+    let signal_2 = Packet::List(Vec::from([Packet::List(Vec::from([Packet::Integer(2)]))]));
+    let signal_6 = Packet::List(Vec::from([Packet::List(Vec::from([Packet::Integer(6)]))]));
 
-        println!(
-            "{:?}\nVS\n{:?}\n{:?}\n",
-            left_packet, right_packet, is_pair_ordered
-        );
+    let mut packets = Vec::from([signal_2.clone(), signal_6.clone()]);
 
-        if is_pair_ordered {
-            result += index;
+    while let Some(Ok(line)) = line_iterator.next() {
+        if line.is_empty() {
+            continue;
         }
-
-        index += 1;
+        packets.push(Packet::from(line));
     }
-    println!("Result: {result}");
+
+    packets.sort();
+
+    let index_2 = packets
+        .iter()
+        .position(|packet| packet == &signal_2)
+        .expect("Signal 2 not found.")
+        + 1;
+
+    let index_6 = packets
+        .iter()
+        .position(|packet| packet == &signal_6)
+        .expect("Signal 6 not found.")
+        + 1;
+
+    println!("Result: {} * {} = {}", index_2, index_6, index_2 * index_6);
 }

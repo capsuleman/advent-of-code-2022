@@ -1,7 +1,7 @@
 use std::cmp::min;
 use std::cmp::Ordering;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Packet {
     Integer(u32),
     List(Vec<Packet>),
