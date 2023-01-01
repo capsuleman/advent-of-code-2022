@@ -47,8 +47,18 @@ fn main() {
     for step_index in 0..MAX_STEP {
         println!("{step_index}\t{:} possibilities", possibilities.len());
 
+        let max_total_flow = *possibilities.values().max().unwrap();
+        println!("{}", max_total_flow);
+
         let mut next_possibilities: HashMap<Possibility, u32> = HashMap::new();
         for (possibility, total_flow) in tqdm(possibilities.into_iter()) {
+            let remaining_flow_upper_value =
+                get_remaining_flow_upper_value(&valves, &possibility, step_index);
+
+            if max_total_flow > total_flow + remaining_flow_upper_value {
+                continue;
+            }
+
             for (next_possibility, new_total_flow) in
                 get_next_possibilities(&valves, possibility, total_flow).into_iter()
             {
@@ -222,4 +232,18 @@ fn get_next_possibilities_one_opening(
     }
 
     next_possibilities_one_opening
+}
+
+fn get_remaining_flow_upper_value(
+    valves: &HashMap<String, Valve>,
+    possibility: &Possibility,
+    step_count: u32,
+) -> u32 {
+    let closed_valves_flow_rate: u32 = valves
+        .iter()
+        .filter(|(valve_name, _)| !possibility.opened_valves.contains(valve_name))
+        .map(|(_, valve)| valve.flow_rate)
+        .sum();
+
+    closed_valves_flow_rate * (MAX_STEP - step_count)
 }
