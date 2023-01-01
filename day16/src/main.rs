@@ -1,3 +1,5 @@
+use itertools::iproduct;
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
@@ -18,7 +20,7 @@ struct Valve {
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct Possibility {
     opened_valves: Vec<String>,
-    current_valve: String,
+    current_valves: Vec<String>,
 }
 
 lazy_static! {
@@ -27,7 +29,7 @@ lazy_static! {
             .unwrap();
 }
 
-const MAX_STEP: u32 = 30;
+const MAX_STEP: u32 = 26;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -37,7 +39,7 @@ fn main() {
     let mut possibilities: HashMap<Possibility, u32> = HashMap::from([(
         Possibility {
             opened_valves: Vec::new(),
-            current_valve: String::from("AA"),
+            current_valves: Vec::from([String::from("AA"), String::from("AA")]),
         },
         0,
     )]);
@@ -108,39 +110,116 @@ fn get_next_possibilities(
         .map(|open_valve| valves[open_valve].flow_rate)
         .sum();
 
-    let is_current_valve_open = possibility
+    let is_current_first_valve_open = possibility
         .opened_valves
-        .contains(&possibility.current_valve);
+        .contains(&possibility.current_valves[0]);
+    let current_first_valve_flow = valves[&possibility.current_valves[0]].flow_rate;
 
-    let current_valve_flow = valves[&possibility.current_valve].flow_rate;
+    let should_try_open_current_first_valve =
+        !is_current_first_valve_open && current_first_valve_flow > 0;
 
-    if !is_current_valve_open && current_valve_flow > 0 {
+    let is_current_second_valve_open = possibility
+        .opened_valves
+        .contains(&possibility.current_valves[1]);
+    let current_second_valve_flow = valves[&possibility.current_valves[1]].flow_rate;
+
+    let should_try_open_current_second_valve =
+        !is_current_second_valve_open && current_second_valve_flow > 0;
+
+    if should_try_open_current_first_valve && should_try_open_current_second_valve {
         let mut opened_valves = possibility.opened_valves.clone();
-        opened_valves.push(possibility.current_valve.clone());
+        opened_valves.extend(possibility.current_valves.clone().into_iter().unique());
         opened_valves.sort();
+
         next_possibilities.insert(
             Possibility {
                 opened_valves,
-                current_valve: possibility.current_valve.clone(),
+                current_valves: possibility.current_valves.clone(),
             },
             total_flow + current_flow,
         );
+    }
+
+    if should_try_open_current_first_valve {
+        for next_possibility in
+            get_next_possibilities_one_opening(valves, &possibility, true).into_iter()
+        {
+            next_possibilities.insert(next_possibility, total_flow + current_flow);
+        }
     };
 
-    valves
-        .get(&possibility.current_valve)
-        .unwrap()
-        .neighbor_valves
-        .iter()
-        .for_each(|neighbor_valve| {
-            next_possibilities.insert(
-                Possibility {
-                    current_valve: neighbor_valve.clone(),
-                    opened_valves: possibility.opened_valves.clone(),
-                },
-                total_flow + current_flow,
-            );
-        });
+    if should_try_open_current_second_valve {
+        for next_possibility in
+            get_next_possibilities_one_opening(valves, &possibility, false).into_iter()
+        {
+            next_possibilities.insert(next_possibility, total_flow + current_flow);
+        }
+    };
+
+    let first_valve_neighbors = Vec::from_iter(
+        valves
+            .get(&possibility.current_valves[0])
+            .unwrap()
+            .neighbor_valves
+            .clone(),
+    );
+    let second_valve_neighbors = Vec::from_iter(
+        valves
+            .get(&possibility.current_valves[1])
+            .unwrap()
+            .neighbor_valves
+            .clone(),
+    );
+
+    for (first_neighbor, second_neighbor) in
+        iproduct!(first_valve_neighbors, second_valve_neighbors)
+    {
+        let mut next_current_valves = Vec::from([first_neighbor, second_neighbor]);
+        next_current_valves.sort();
+        next_possibilities.insert(
+            Possibility {
+                current_valves: next_current_valves,
+                opened_valves: possibility.opened_valves.clone(),
+            },
+            total_flow + current_flow,
+        );
+    }
 
     next_possibilities
+}
+
+fn get_next_possibilities_one_opening(
+    valves: &HashMap<String, Valve>,
+    possibility: &Possibility,
+    is_first_valve_opening: bool,
+) -> HashSet<Possibility> {
+    let (opening_valve_index, moving_valve_index): (usize, usize) = match is_first_valve_opening {
+        true => (0, 1),
+        false => (1, 0),
+    };
+
+    let mut next_possibilities_one_opening = HashSet::new();
+
+    let mut opened_valves = possibility.opened_valves.clone();
+    opened_valves.push(possibility.current_valves[opening_valve_index].clone());
+    opened_valves.sort();
+
+    for neighbor_valves in valves
+        .get(&possibility.current_valves[moving_valve_index])
+        .unwrap()
+        .neighbor_valves
+        .clone()
+    {
+        let mut current_valves = Vec::from([
+            possibility.current_valves[opening_valve_index].clone(),
+            neighbor_valves,
+        ]);
+        current_valves.sort();
+        next_possibilities_one_opening.insert(Possibility {
+            opened_valves: opened_valves.clone(),
+            current_valves,
+        });
+    }
+
+    next_possibilities_one_opening
 }
